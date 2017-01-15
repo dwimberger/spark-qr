@@ -26,42 +26,50 @@ import com.google.zxing.client.j2se.MatrixToImageWriter;
 import com.google.zxing.common.BitMatrix;
 import com.google.zxing.common.HybridBinarizer;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * @author dieter at wimpi.net
  */
 public class App {
 
+    private static final Logger LOG = LoggerFactory.getLogger(App.class);
     private static final Map<DecodeHintType, ?> finalHints = buildHints();
 
     public static void main(String[] args) {
         //Encoder
         get("/qr/:name", (request, response) -> {
-
             String in = request.params(":name");
             if (in == null || in.length() == 0) {
                 halt(400, "String to be encoded is missing!");
             } else {
                 //handle size
                 int size = 300;
-                if (request.params("size") != null) {
-                    size = Integer.parseInt(request.params("size"));
+                String sizeString =request.queryParams("size");
+                if (sizeString != null) {
+                    try {
+                        size = Integer.parseInt(sizeString);
+                    } catch (NumberFormatException ex) {
+                        halt(500, ex.getMessage());
+                    }
                 }
                 //handle format
-                String imageFormat = "PNG";
-                if (request.params("format") != null) {
-                    imageFormat = request.params("format");
+                String imageFormat = request.queryParams("format");
+                if (imageFormat == null) {
+                    imageFormat = "PNG";
                 }
                 //handle ECL
                 String errorCorrectionLevel = null;
-                if (request.params("ecl") != null) {
-                    errorCorrectionLevel = request.params("ecl");
+                if (request.queryParams("ecl") != null) {
+                    errorCorrectionLevel = request.queryParams("ecl");
                 }
-
 
                 Map<EncodeHintType, Object> hints = new EnumMap<>(EncodeHintType.class);
                 if (errorCorrectionLevel != null) {
                     hints.put(EncodeHintType.ERROR_CORRECTION, errorCorrectionLevel);
                 }
+
                 BitMatrix matrix = new MultiFormatWriter().encode(
                         in,
                         BarcodeFormat.QR_CODE,
@@ -71,6 +79,7 @@ public class App {
                 );
                 response.type("image/" + imageFormat.toLowerCase());
                 MatrixToImageWriter.writeToStream(matrix, imageFormat, response.raw().getOutputStream());
+
             }
             return null;
         });
