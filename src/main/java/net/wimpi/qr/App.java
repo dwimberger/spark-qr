@@ -36,11 +36,23 @@ public class App {
 
     private static final Logger LOG = LoggerFactory.getLogger(App.class);
     private static final Map<DecodeHintType, ?> finalHints = buildHints();
+    private static final String QR_PREFIX_KEY = "QR_PREFIX";
+    private static final String QR_PREFIX;
+
+    static {
+        //Prefix
+        if(System.getenv().containsKey(QR_PREFIX_KEY)) {
+            QR_PREFIX = System.getenv(QR_PREFIX_KEY);
+        } else {
+            QR_PREFIX = "";
+        }
+
+    }//static initializer
 
     public static void main(String[] args) {
         //Encoder
         get("/qr/:name", (request, response) -> {
-            String in = request.params(":name");
+            String in = QR_PREFIX + request.params(":name");
             if (in == null || in.length() == 0) {
                 halt(400, "String to be encoded is missing!");
             } else {
